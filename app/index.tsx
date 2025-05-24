@@ -1,10 +1,7 @@
 import React from 'react';
 import "react-native-gesture-handler";
 import "react-native-reanimated";
-
-//import { createStackNavigator } from '@react-navigation/stack';
-import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator, StackNavigationProp } from '@react-navigation/stack';
+import { createStackNavigator } from '@react-navigation/stack';
 import LoginScreen from '../Screens/LoginScreen';
 import SignUpScreen from '../Screens/SignUp';
 import MainTabs from '../app/MainTabs';
@@ -19,24 +16,66 @@ type RootStackParamList = {
   MainTabs: undefined;
   AddCustomer: undefined;
   AddSupplier: undefined;
+  CustomersList: undefined;
+  CustomerDetails: { id: string };
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
 
-//const Stack = createStackNavigator();
-
 const App = () => {
   return (
-    
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />  
-        <Stack.Screen name="MainTabs" component={MainTabs} />
-        <Stack.Screen name="AddCustomer" component={AddCustomer} options={{ headerTitle: 'Add Customer' }} />
-        <Stack.Screen name="AddSupplier" component={AddSupplier} options={{ headerTitle: 'Add Supplier' }} />
-      </Stack.Navigator>
-    
+    <Stack.Navigator 
+      screenOptions={{ 
+        headerShown: false,
+        cardStyle: { backgroundColor: '#FFFFFF' }
+      }}
+    >
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="SignUp" component={SignUpScreen} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />  
+      <Stack.Screen name="MainTabs" component={MainTabs} />
+      <Stack.Screen 
+        name="AddCustomer" 
+        component={AddCustomer} 
+        options={{ 
+          headerShown: true,
+          headerTitle: 'Add Customer',
+          headerStyle: {
+            backgroundColor: '#FFFFFF',
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 1,
+            borderBottomColor: '#E5E7EB',
+          },
+          headerTitleStyle: {
+            fontSize: 18,
+            fontWeight: '600',
+            color: '#111827',
+          },
+        }} 
+      />
+      <Stack.Screen 
+        name="AddSupplier" 
+        component={AddSupplier} 
+        options={{ 
+          headerShown: true,
+          headerTitle: 'Add Supplier',
+          headerStyle: {
+            backgroundColor: '#FFFFFF',
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 1,
+            borderBottomColor: '#E5E7EB',
+          },
+          headerTitleStyle: {
+            fontSize: 18,
+            fontWeight: '600',
+            color: '#111827',
+          },
+        }} 
+      />
+    </Stack.Navigator>
   );
 };
+
 export default App;

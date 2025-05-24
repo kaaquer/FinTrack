@@ -2,8 +2,10 @@ import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItemList } from "@react-navigation/drawer";
 import { Ionicons } from "@expo/vector-icons";
-import { View, TouchableOpacity, Text, Alert } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { View, TouchableOpacity, Text, Alert, StyleSheet } from "react-native";
+import { useNavigation, DrawerActions } from "@react-navigation/native";
+import type { NavigationProp, ParamListBase } from '@react-navigation/native';
+import type { StackNavigationProp } from "@react-navigation/stack";
 import { getAuth, signOut } from "firebase/auth";
 
 import Cashbook from "../Screens/Cashbook";
@@ -20,16 +22,53 @@ import Support from "@/Screens/Support";
 const Tab = createBottomTabNavigator();
 const Drawer = createDrawerNavigator();
 
+const HeaderRight = () => {
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
+  
+  return (
+    <View style={styles.headerRightContainer}>
+      <TouchableOpacity
+        style={styles.headerIcon}
+        onPress={() => navigation.navigate('Notifications')}
+      >
+        <Ionicons name="notifications-outline" size={24} color="#111827" />
+      </TouchableOpacity>
+      <TouchableOpacity
+        onPress={() => navigation.navigate('Profile')}
+      >
+        <Ionicons name="person-circle-outline" size={24} color="#111827" />
+      </TouchableOpacity>
+    </View>
+  );
+};
+
+const HeaderLeft = () => {
+  const navigation = useNavigation();
+  
+  return (
+    <TouchableOpacity
+      style={styles.headerIcon}
+      onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+    >
+      <Ionicons name="menu-outline" size={24} color="#111827" />
+    </TouchableOpacity>
+  );
+};
+
 const TabNavigator = () => {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        headerShown: false,
+        headerShown: true,
+        headerLeft: () => <HeaderLeft />,
+        headerRight: () => <HeaderRight />,
+        headerTitleStyle: styles.headerTitle,
+        headerStyle: styles.header,
         tabBarIcon: ({ focused, color, size }) => {
           let iconName = "";
           switch (route.name) {
-            case "Customers":
-              iconName = focused ? "people" : "people-outline";
+            case "Home":
+              iconName = focused ? "home" : "home-outline";
               break;
             case "Suppliers":
               iconName = focused ? "storefront" : "storefront-outline";
@@ -45,30 +84,50 @@ const TabNavigator = () => {
           }
           return <Ionicons name={iconName as keyof typeof Ionicons.glyphMap} size={size} color={color} />;
         },
-        tabBarActiveTintColor: "green",
-        tabBarInactiveTintColor: "gray",
+        tabBarActiveTintColor: "#2563EB",
+        tabBarInactiveTintColor: "#6B7280",
       })}
     >
-      <Tab.Screen name="Customers" component={Customers} />
-      <Tab.Screen name="Suppliers" component={Suppliers} />
-      <Tab.Screen name="Cashbook" component={Cashbook} />
-      <Tab.Screen name="Receipts" component={Receipts} />
+      <Tab.Screen 
+        name="Home" 
+        component={Customers}
+        options={{
+          title: "Home"
+        }}
+      />
+      <Tab.Screen 
+        name="Suppliers" 
+        component={Suppliers}
+        options={{
+          title: "Suppliers"
+        }}
+      />
+      <Tab.Screen 
+        name="Cashbook" 
+        component={Cashbook}
+        options={{
+          title: "Cashbook"
+        }}
+      />
+      <Tab.Screen 
+        name="Receipts" 
+        component={Receipts}
+        options={{
+          title: "Receipts"
+        }}
+      />
     </Tab.Navigator>
   );
 };
 
-import { DrawerContentComponentProps } from "@react-navigation/drawer";
-
-type RootStackParamList = {
-  Login: undefined; // Add Login to the navigation stack
-  Home: undefined;
+type DrawerParamList = {
+  Login: undefined;
+  MainTabs: undefined;
 };
 
-const CustomDrawerContent = (props: DrawerContentComponentProps) => {
-  const navigation = useNavigation<import("@react-navigation/native").NavigationProp<RootStackParamList>>();
-  const auth = getAuth();
-
-  const handleLogout = async () => {
+const CustomDrawerContent = (props: any) => {
+  const navigation = useNavigation<StackNavigationProp<DrawerParamList>>();
+  const auth = getAuth();  const handleLogout = async () => {
     Alert.alert(
       "Logout",
       "Are you sure you want to logout?",
@@ -79,10 +138,8 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
           onPress: async () => {
             try {
               await signOut(auth);
-              navigation.reset({
-                index: 0,
-                routes: [{ name: "Login" }], // Navigate to Login screen
-              });
+              // Using replace instead of reset to avoid any navigation stack issues
+              navigation.replace('Login');
             } catch (error) {
               Alert.alert("Error", "Failed to log out. Please try again.");
             }
@@ -99,7 +156,6 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
         <DrawerItemList {...props} />
       </DrawerContentScrollView>
 
-      {/* Logout Button */}
       <TouchableOpacity
         onPress={handleLogout}
         style={{
@@ -119,11 +175,20 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
 
 const MainTabs = () => {
   return (
-    <Drawer.Navigator drawerContent={(props) => <CustomDrawerContent {...props} />}>
+    <Drawer.Navigator
+      drawerContent={(props) => <CustomDrawerContent {...props} />}
+      screenOptions={{
+        headerShown: true,
+        headerRight: () => <HeaderRight />,
+        headerTitleStyle: styles.headerTitle,
+        headerStyle: styles.header,
+      }}
+    >
       <Drawer.Screen
         name="Home"
         component={TabNavigator}
         options={{
+          headerShown: false,
           drawerIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
         }}
       />
@@ -172,5 +237,27 @@ const MainTabs = () => {
     </Drawer.Navigator>
   );
 };
+
+const styles = StyleSheet.create({
+  headerRightContainer: {
+    flexDirection: 'row',
+    marginRight: 16,
+  },
+  headerIcon: {
+    marginRight: 16,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#111827",
+  },
+  header: {
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+    elevation: 0,
+    shadowOpacity: 0,
+  },
+});
 
 export default MainTabs;

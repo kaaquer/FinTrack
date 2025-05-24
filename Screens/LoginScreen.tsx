@@ -19,6 +19,7 @@ const LoginScreen = () => {
   const navigation = useNavigation<LoginScreenNavigationProp>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -26,6 +27,7 @@ const LoginScreen = () => {
       return;
     }
 
+    setIsLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
       Alert.alert('Success', 'Login successful!');
@@ -33,6 +35,8 @@ const LoginScreen = () => {
     } catch (error: any) {
       Alert.alert('Error', error.message);
       console.error('Login Error:', error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -48,6 +52,7 @@ const LoginScreen = () => {
         onChangeText={setEmail}
         keyboardType="email-address"
         autoCapitalize="none"
+        editable={!isLoading}
       />
 
       <TextInput
@@ -57,21 +62,26 @@ const LoginScreen = () => {
         secureTextEntry
         value={password}
         onChangeText={setPassword}
+        editable={!isLoading}
       />
 
       {/* Login Button */}
-      <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-        <Text style={styles.loginText}>Login</Text>
+      <TouchableOpacity 
+        style={[styles.loginButton, isLoading && styles.loginButtonDisabled]} 
+        onPress={handleLogin}
+        disabled={isLoading}
+      >
+        <Text style={styles.loginText}>{isLoading ? 'Logging in...' : 'Login'}</Text>
       </TouchableOpacity>
 
       {/* Sign Up Button */}
-      <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-        <Text style={styles.signUpText}>Don't have an account? Sign Up</Text>
+      <TouchableOpacity onPress={() => navigation.navigate('SignUp')} disabled={isLoading}>
+        <Text style={[styles.signUpText, isLoading && styles.textDisabled]}>Don't have an account? Sign Up</Text>
       </TouchableOpacity>
 
       {/* Forgot Password */}
-      <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
-        <Text style={styles.forgotPassword}>Forgot Password?</Text>
+      <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')} disabled={isLoading}>
+        <Text style={[styles.forgotPassword, isLoading && styles.textDisabled]}>Forgot Password?</Text>
       </TouchableOpacity>
     </View>
   );
@@ -113,6 +123,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginVertical: 10,
   },
+  loginButtonDisabled: {
+    backgroundColor: '#818CF8', // lighter shade when disabled
+    opacity: 0.7,
+  },
   loginText: {
     color: 'white',
     fontSize: 18,
@@ -127,5 +141,8 @@ const styles = StyleSheet.create({
     color: '#4F46E5',
     fontSize: 14,
     marginTop: 10,
+  },
+  textDisabled: {
+    opacity: 0.5,
   },
 });
