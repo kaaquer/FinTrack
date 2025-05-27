@@ -6,7 +6,10 @@
     "start": "node dist/server.js",
     "dev": "nodemon src/server.ts",
     "build": "tsc",
-    "watch-ts": "tsc -w"
+    "watch-ts": "tsc -w",
+    "typeorm": "typeorm-ts-node-commonjs",
+    "migration:generate": "npm run typeorm migration:generate -- -d src/config/database.ts",
+    "migration:run": "npm run typeorm migration:run -- -d src/config/database.ts"
   },
   "keywords": [],
   "author": "",
@@ -15,17 +18,19 @@
   "dependencies": {
     "@types/cors": "^2.8.18",
     "@types/express": "^5.0.2",
-    "@types/mongoose": "^5.11.96",
     "@types/node": "^22.15.21",
+    "@types/sqlite3": "^3.1.11",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
-    "mongoose": "^8.15.1",
-    "ts-node": "^10.9.2",
+    "reflect-metadata": "^0.2.2",
+    "sqlite3": "^5.1.7",
     "typescript": "^5.8.3"
   },
   "devDependencies": {
     "@types/nodemon": "^1.19.6",
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "ts-node": "^10.9.2",
+    "typeorm": "^0.3.24"
   }
 }

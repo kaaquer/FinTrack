@@ -1,8 +1,9 @@
+import 'reflect-metadata';
 import express from 'express';
 import cors from 'cors';
-import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import customerRoutes from './routes/customer.routes';
+import { AppDataSource } from './config/database';
 
 // Load environment variables
 dotenv.config();
@@ -15,13 +16,13 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Database connection
-const connectDB = async () => {
+// Initialize TypeORM
+const initializeDatabase = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI as string);
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
+    await AppDataSource.initialize();
+    console.log('Database connection established');
   } catch (error: any) {
-    console.error(`Error: ${error.message}`);
+    console.error('Error connecting to the database:', error);
     process.exit(1);
   }
 };
@@ -41,7 +42,7 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 
 // Start server
 const PORT = process.env.PORT || 8080;
-connectDB().then(() => {
+initializeDatabase().then(() => {
   app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
   });
