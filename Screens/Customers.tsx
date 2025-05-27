@@ -1,23 +1,72 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, TextInput, FlatList, ActivityIndicator, Alert, Platform, SafeAreaView } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  TextInput,
+  FlatList,
+  ActivityIndicator,
+  Alert,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  Dimensions,
+  Animated,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
+import { BarChart, LineChart } from "react-native-chart-kit";
+
+const API_ENDPOINTS = {
+  customers: '/api/customers', // This will be replaced with actual API endpoint
+};
 
 type RootStackParamList = {
   CustomersList: undefined;
   CustomerDetails: { id: string };
   AddCustomer: undefined;
+  Reports: undefined;
+  Invoice: undefined;
+  Transactions: undefined;
 };
 
-// Mock data for development
-const mockCustomers = [
+interface Customer {
+  id: string;
+  name: string;
+  contact: string;
+  address: string;
+  status: "Active" | "Lead" | "Inactive";
+  lastTransaction?: string;
+  totalSpent?: number;
+}
+
+interface MetricCardProps {
+  title: string;
+  value: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  trend: number;
+  trendValue: number;
+}
+
+interface QuickActionProps {
+  title: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  onPress: () => void;
+  color: string;
+}
+
+// Mock data with proper types
+const mockCustomers: Customer[] = [
   {
     id: "1",
     name: "John Smith",
     contact: "john.smith@email.com",
     address: "123 Main St, City, State",
-    status: "Active"
+    status: "Active",
+    lastTransaction: "2024-05-20",
+    totalSpent: 12500
   },
   {
     id: "2",
@@ -31,52 +80,98 @@ const mockCustomers = [
     name: "Michael Brown",
     contact: "m.brown@email.com",
     address: "789 Pine Rd, City, State",
-    status: "Active"
-  },
-  {
-    id: "4",
-    name: "Emily Davis",
-    contact: "emily.d@email.com",
-    address: "101 Elm St, City, State",
-    status: "Active"
-  },
-  {
-    id: "5",
-    name: "Robert Wilson",
-    contact: "r.wilson@email.com",
-    address: "202 Maple Ave, City, State",
-    status: "Lead"
-  },
-  {
-    id: "6",
-    name: "Lisa Anderson",
-    contact: "lisa.a@email.com",
-    address: "303 Cedar Rd, City, State",
-    status: "Active"
+    status: "Active",
+    lastTransaction: "2024-05-18",
+    totalSpent: 8900
   }
 ];
 
-// API Configuration
-const API_BASE_URL = Platform.select({
-  web: 'http://localhost:8080',  // For web development
-  default: 'http://127.0.0.1:8080'  // For mobile development
-});
+const screenWidth = Dimensions.get('window').width;
 
-const API_ENDPOINTS = {
-  customers: `${API_BASE_URL}/api/customers`
+const monthlyData = {
+  labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+  datasets: [{
+    data: [30000, 45000, 38000, 55000, 52000, 59000],
+    color: (opacity = 1) => `rgba(37, 99, 235, ${opacity})`,
+    strokeWidth: 2
+  }]
 };
+
+const chartConfig = {
+  backgroundGradientFrom: "#FFFFFF",
+  backgroundGradientTo: "#FFFFFF",
+  decimalPlaces: 0,
+  color: (opacity = 1) => `rgba(37, 99, 235, ${opacity})`,
+  style: {
+    borderRadius: 16,
+  },
+};
+
+const BusinessMetricCard: React.FC<MetricCardProps> = ({ title, value, icon, trend, trendValue }) => {
+  const animatedValue = useState(new Animated.Value(0))[0];
+  
+  useEffect(() => {
+    Animated.spring(animatedValue, {
+      toValue: 1,
+      useNativeDriver: true,
+      tension: 20,
+      friction: 2,
+    }).start();
+  }, []);
+
+  return (
+    <Animated.View 
+      style={[
+        styles.metricCard,
+        {
+          transform: [
+            {
+              scale: animatedValue.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0.9, 1],
+              }),
+            },
+          ],
+          opacity: animatedValue,
+        },
+      ]}
+    >
+      <View style={styles.metricIconContainer}>
+        <View style={[styles.metricIcon, { backgroundColor: `${trend >= 0 ? '#dcfce7' : '#fee2e2'}` }]}>
+          <Ionicons name={icon} size={24} color={trend >= 0 ? '#16a34a' : '#dc2626'} />
+        </View>
+        <View style={[styles.trendBadge, { backgroundColor: trend >= 0 ? '#dcfce7' : '#fee2e2' }]}>
+          <Ionicons 
+            name={trend >= 0 ? 'trending-up' : 'trending-down'} 
+            size={14} 
+            color={trend >= 0 ? '#16a34a' : '#dc2626'} 
+          />
+          <Text style={[styles.trendText, { color: trend >= 0 ? '#16a34a' : '#dc2626' }]}>
+            {Math.abs(trendValue)}%
+          </Text>
+        </View>
+      </View>
+      <Text style={styles.metricValue}>{value}</Text>
+      <Text style={styles.metricTitle}>{title}</Text>
+    </Animated.View>
+  );
+};
+
+const QuickAction: React.FC<QuickActionProps> = ({ title, icon, onPress, color }) => (
+  <TouchableOpacity 
+    style={[styles.quickActionButton, { backgroundColor: `${color}10` }]} 
+    onPress={onPress}
+  >
+    <View style={[styles.quickActionIcon, { backgroundColor: color }]}>
+      <Ionicons name={icon} size={20} color="#FFFFFF" />
+    </View>
+    <Text style={[styles.quickActionText, { color }]}>{title}</Text>
+  </TouchableOpacity>
+);
 
 const CustomersDashboard = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [searchQuery, setSearchQuery] = useState("");
-  type Customer = {
-    id: string;
-    name: string;
-    contact: string;
-    address: string;
-    status: string;
-  };
-
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -85,31 +180,11 @@ const CustomersDashboard = () => {
     const fetchCustomers = async () => {
       try {
         setLoading(true);
-        const response = await fetch(API_ENDPOINTS.customers, {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        setCustomers(data);
-        setError(null);
-      } catch (err) {
-        console.warn("Using mock data due to:", err);
-        // Fallback to mock data
+        // For now, we'll use mock data
         setCustomers(mockCustomers);
-        setError(
-          Platform.OS === 'web' 
-            ? "Using mock data - Backend not available. Make sure your backend server is running at http://localhost:8080"
-            : "Using mock data - Backend not available. Make sure your backend server is running at http://127.0.0.1:8080"
-        );
-      } finally {
+        setLoading(false);
+      } catch (err) {
+        setError("Failed to load customers. Please try again later.");
         setLoading(false);
       }
     };
@@ -117,18 +192,10 @@ const CustomersDashboard = () => {
     fetchCustomers();
   }, []);
 
-  // Filter customers based on search query
-  const filteredCustomers = customers.filter(
-    (customer) =>
-      customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      customer.contact.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      customer.address.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
   const totalCustomers = customers.length;
   const activeCustomers = customers.filter((c) => c.status === "Active").length;
   const leads = customers.filter((c) => c.status === "Lead").length;
-  const inactiveCustomers = totalCustomers - activeCustomers - leads;
+  const inactiveCustomers = customers.filter((c) => c.status === "Inactive").length;
 
   // Header component for FlatList
   const ListHeaderComponent = () => (
@@ -201,52 +268,157 @@ const CustomersDashboard = () => {
     </View>
   );
 
+  const metrics: MetricCardProps[] = [
+    { 
+      title: "Total Customers",
+      value: "1,234",
+      icon: "people",
+      trend: 12,
+      trendValue: 12
+    },
+    {
+      title: "Active Deals",
+      value: "23",
+      icon: "trending-up",
+      trend: 8,
+      trendValue: 8
+    },
+    {
+      title: "Monthly Revenue",
+      value: "$52,000",
+      icon: "cash",
+      trend: 15,
+      trendValue: 15
+    },
+    {
+      title: "Pending Invoices",
+      value: "7",
+      icon: "document-text",
+      trend: -3,
+      trendValue: 3
+    }
+  ];
+
+  const quickActions: QuickActionProps[] = [
+    {
+      title: "Add Customer",
+      icon: "person-add",
+      color: "#2563EB",
+      onPress: () => navigation.navigate("AddCustomer")
+    },
+    {
+      title: "New Invoice",
+      icon: "receipt",
+      color: "#7C3AED",
+      onPress: () => navigation.navigate("Invoice")
+    },
+    {
+      title: "Add Transaction",
+      icon: "cash",
+      color: "#059669",
+      onPress: () => navigation.navigate("Transactions")
+    },
+    {
+      title: "View Reports",
+      icon: "bar-chart",
+      color: "#EA580C",
+      onPress: () => navigation.navigate("Reports")
+    }
+  ];
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#2563EB" />
-            <Text style={styles.loadingText}>Loading customers...</Text>
-          </View>
-        ) : (
-          <FlatList
-            style={styles.flatList}
-            contentContainerStyle={styles.flatListContent}
-            data={filteredCustomers}
-            keyExtractor={(item) => item.id.toString()}
-            ListHeaderComponent={ListHeaderComponent}
-            ListFooterComponent={ListFooterComponent}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={[styles.customerCard, { backgroundColor: "#E0FFFF" }]}
-                onPress={() => navigation.navigate("CustomerDetails", { id: item.id })}
-              >
-                <Text style={styles.customerName}>{item.name}</Text>
-                <Text style={styles.customerContact}>{item.contact}</Text>
-                <Text style={styles.customerAddress}>{item.address}</Text>
-                <View style={[styles.statusBadge, item.status === 'Active' ? styles.activeBadge : styles.leadBadge]}>
-                  <Text style={styles.statusText}>{item.status}</Text>
-                </View>
-              </TouchableOpacity>
-            )}
-            ListEmptyComponent={
-              <View style={styles.emptyContainer}>
-                <Text style={styles.emptyMessage}>No customers found</Text>
-              </View>
-            }
-            showsVerticalScrollIndicator={true}
-          />
-        )}
-
-        {/* Floating "Add Customer" Button */}
-        <TouchableOpacity 
-          style={[styles.fab, { backgroundColor: "#32CD32" }]} 
-          onPress={() => navigation.navigate("AddCustomer")}
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        {/* Modern Gradient Header */}
+        <LinearGradient
+          colors={['#2563eb', '#1d4ed8']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.header}
         >
-          <Ionicons name="person-add" size={25} color="white" />
-        </TouchableOpacity>
-      </View>
+          <View style={styles.headerContent}>
+            <View>
+              <Text style={styles.welcomeText}>Welcome back,</Text>
+              <Text style={styles.businessName}>FinTrack Business</Text>
+            </View>
+            <View style={styles.dateContainer}>
+              <Ionicons name="calendar" size={20} color="#FFFFFF" />
+              <Text style={styles.dateText}>{new Date().toLocaleDateString()}</Text>
+            </View>
+          </View>
+        </LinearGradient>
+
+        {/* Business Metrics */}
+        <View style={styles.metricsContainer}>
+          <View style={styles.metricsGrid}>
+            {metrics.map((metric, index) => (
+              <BusinessMetricCard key={index} {...metric} />
+            ))}
+          </View>
+        </View>
+
+        {/* Quick Actions */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <View style={styles.quickActionsGrid}>
+            {quickActions.map((action, index) => (
+              <QuickAction key={index} {...action} />
+            ))}
+          </View>
+        </View>
+
+        {/* Revenue Chart */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Revenue Overview</Text>
+          <View style={styles.chartCard}>
+            <LineChart
+              data={monthlyData}
+              width={Dimensions.get('window').width - 48}
+              height={220}
+              chartConfig={chartConfig}
+              bezier
+              style={styles.chart}
+            />
+          </View>
+        </View>
+
+        {/* Recent Customers */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Recent Customers</Text>
+            <TouchableOpacity
+              onPress={() => navigation.navigate("CustomersList")}
+              style={styles.viewAllButton}
+            >
+              <Text style={styles.viewAllText}>View All</Text>
+              <Ionicons name="arrow-forward" size={16} color="#2563EB" />
+            </TouchableOpacity>
+          </View>
+          {mockCustomers.slice(0, 3).map((customer) => (
+            <TouchableOpacity
+              key={customer.id}
+              style={styles.customerCard}
+              onPress={() => navigation.navigate("CustomerDetails", { id: customer.id })}
+            >
+              <View style={styles.customerInfo}>
+                <View style={styles.customerAvatar}>
+                  <Text style={styles.avatarText}>
+                    {customer.name.charAt(0)}
+                  </Text>
+                </View>
+                <View>
+                  <Text style={styles.customerName}>{customer.name}</Text>
+                  <Text style={styles.customerContact}>{customer.contact}</Text>
+                </View>
+              </View>
+              <View style={[styles.statusBadge, { backgroundColor: customer.status === "Active" ? "#DCFCE7" : "#FEF3C7" }]}>
+                <Text style={[styles.statusText, { color: customer.status === "Active" ? "#16A34A" : "#D97706" }]}>
+                  {customer.status}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -254,51 +426,39 @@ const CustomersDashboard = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#F9FAFB",
+    backgroundColor: '#f8fafc',
   },
   container: {
     flex: 1,
-    backgroundColor: "#F9FAFB",
   },
-  flatList: {
-    flex: 1,
-  },
-  flatListContent: {
-    padding: 16,
-    paddingBottom: 100, // Extra space for floating button
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: "#6B7280",
+  header: {
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
   },
   title: {
-    fontSize: 24,
-    fontWeight: "bold",
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#1e293b',
     marginBottom: 8,
-    color: "#111827",
   },
   subtitle: {
     fontSize: 16,
-    color: "#6B7280",
-    marginBottom: 16,
+    color: '#64748b',
+    marginBottom: 24,
   },
   searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
     paddingHorizontal: 12,
-    marginBottom: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowRadius: 8,
     elevation: 2,
   },
   searchIcon: {
@@ -308,118 +468,218 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 44,
     fontSize: 16,
-    color: "#111827",
+    color: '#1e293b',
   },
   statsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    marginBottom: 16,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 24,
   },
   statCard: {
-    width: "48%",
-    alignItems: "center",
+    width: '48%',
+    backgroundColor: '#fff',
+    borderRadius: 16,
     padding: 16,
-    borderRadius: 8,
-    backgroundColor: "white",
-    shadowColor: "#000",
+    marginBottom: 16,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    marginBottom: 10,
+    shadowRadius: 8,
+    elevation: 2,
   },
   statTitle: {
     fontSize: 14,
-    color: "#6B7280",
-    marginBottom: 4,
+    color: '#64748b',
+    marginBottom: 8,
   },
   statValue: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#111827",
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1e293b',
   },
-  analyticsCard: {
+  section: {
     padding: 16,
-    borderRadius: 8,
-    alignItems: "center",
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1e293b',
     marginBottom: 16,
-    shadowColor: "#000",
+  },
+  quickActionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  quickActionButton: {
+    width: '48%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 16,
+  },
+  quickActionIcon: {
+    padding: 8,
+    borderRadius: 12,
+    marginRight: 12,
+  },
+  quickActionText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  chartCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  analyticsTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginTop: 8,
-    color: "#111827",
-  },
-  analyticsText: {
-    fontSize: 14,
-    color: "#6B7280",
-    textAlign: "center",
-    marginTop: 4,
-  },
-  customersListTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#111827",
-    marginBottom: 16,
+  chart: {
+    marginVertical: 8,
+    borderRadius: 16,
   },
   customerCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: '#fff',
+    borderRadius: 16,
     padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    shadowColor: "#000",
+    marginBottom: 16,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 3,
+    shadowRadius: 8,
     elevation: 2,
+  },
+  customerInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  customerAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#e2e8f0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  avatarText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#64748b',
   },
   customerName: {
     fontSize: 16,
-    fontWeight: "bold",
-    color: "#111827",
+    fontWeight: '600',
+    color: '#1e293b',
     marginBottom: 4,
   },
   customerContact: {
     fontSize: 14,
-    color: "#6B7280",
-    marginBottom: 2,
+    color: '#64748b',
   },
-  customerAddress: {
-    fontSize: 14,
-    color: "#6B7280",
+  analyticsCard: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    padding: 24,
+    borderRadius: 16,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  analyticsTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1e293b',
     marginBottom: 8,
   },
-  statusBadge: {
-    alignSelf: "flex-start",
+  analyticsText: {
+    fontSize: 14,
+    color: '#64748b',
+    textAlign: 'center',
+  },
+  metricsContainer: {
+    padding: 16,
+    marginTop: -30,
+  },
+  metricsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  metricCard: {
+    width: '48%',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  metricIconContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  metricIcon: {
+    padding: 8,
+    borderRadius: 12,
+  },
+  trendBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 4,
+    borderRadius: 20,
   },
-  activeBadge: {
-    backgroundColor: "#DCFCE7",
-  },
-  leadBadge: {
-    backgroundColor: "#FEF3C7",
-  },
-  statusText: {
+  trendText: {
     fontSize: 12,
-    fontWeight: "600",
-    color: "#111827",
+    fontWeight: '600',
+    marginLeft: 4,
   },
-  emptyContainer: {
-    padding: 32,
+  metricValue: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1e293b',
+    marginBottom: 4,
+  },
+  metricTitle: {
+    fontSize: 14,
+    color: '#64748b',
+  },
+  customersListTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1e293b',
+    marginBottom: 16,
+    marginLeft: 16,
+  },
+  errorContainer: {
+    flexDirection: "row",
     alignItems: "center",
+    padding: 16,
+    backgroundColor: "#FFE4E6",
+    borderRadius: 8,
+    marginBottom: 16,
   },
-  emptyMessage: {
-    textAlign: "center",
-    color: "#6B7280",
-    fontSize: 16,
+  errorText: {
+    fontSize: 14,
+    color: "#DC2626",
+    marginLeft: 8,
+    flex: 1,
   },
   footerContainer: {
     marginTop: 16,
@@ -454,20 +714,58 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 8,
   },
-  errorContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 16,
-    backgroundColor: "#FFE4E6",
-    borderRadius: 8,
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  welcomeText: {
+    fontSize: 16,
+    color: '#fff',
+    opacity: 0.9,
+  },
+  businessName: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#fff',
+    marginTop: 4,
+  },
+  dateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  dateText: {
+    color: '#fff',
+    marginLeft: 6,
+    fontSize: 14,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 16,
   },
-  errorText: {
+  viewAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  viewAllText: {
     fontSize: 14,
-    color: "#DC2626",
-    marginLeft: 8,
-    flex: 1,
+    color: '#2563eb',
+    marginRight: 4,
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '500',
   },
 });
-
 export default CustomersDashboard;
