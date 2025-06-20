@@ -464,7 +464,6 @@ const CustomersDashboard = () => {
               <Ionicons name="arrow-forward" size={16} color="#2563EB" />
             </TouchableOpacity>
           </View>
-          
           {loading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="small" color="#2563EB" />
@@ -482,30 +481,43 @@ const CustomersDashboard = () => {
               </TouchableOpacity>
             </View>
           ) : (
-            customers.slice(0, 3).map((customer) => (
-              <TouchableOpacity
-                key={customer.id}
-                style={styles.customerCard}
-                onPress={() => navigation.navigate("CustomerDetails", { id: customer.id })}
-              >
-                <View style={styles.customerInfo}>
-                  <View style={styles.customerAvatar}>
-                    <Text style={styles.avatarText}>
-                      {customer.name.charAt(0)}
-                    </Text>
-                  </View>
-                  <View>
-                    <Text style={styles.customerName}>{customer.name}</Text>
-                    <Text style={styles.customerContact}>{customer.contact}</Text>
-                  </View>
-                </View>
-                <View style={[styles.statusBadge, { backgroundColor: customer.status === "Active" ? "#DCFCE7" : "#FEF3C7" }]}>
-                  <Text style={[styles.statusText, { color: customer.status === "Active" ? "#16A34A" : "#D97706" }]}>
-                    {customer.status}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            ))
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{marginLeft: -8, marginRight: -8, paddingVertical: 4}}>
+              {customers.slice(0, 6).map((customer) => {
+                // Avatar initials
+                const nameParts = customer.name.split(' ');
+                const initials = nameParts.length > 1 ? nameParts[0][0] + nameParts[1][0] : customer.name.substring(0, 2);
+                // Color hash for avatar
+                const colors = ['#2563EB', '#7C3AED', '#059669', '#EA580C', '#DC2626', '#F59E42'];
+                const colorIdx = customer.name.charCodeAt(0) % colors.length;
+                const avatarColor = colors[colorIdx];
+                // Status badge color
+                let badgeColor = '#FEF3C7', badgeText = '#D97706';
+                if (customer.status === 'Active') { badgeColor = '#DCFCE7'; badgeText = '#16A34A'; }
+                else if (customer.status === 'Inactive') { badgeColor = '#F3F4F6'; badgeText = '#6B7280'; }
+                // Format balance
+                const balance = typeof customer.totalSpent === 'number' ? `$${customer.totalSpent.toLocaleString()}` : '--';
+                // Format last transaction
+                const lastTx = customer.lastTransaction ? new Date(customer.lastTransaction).toLocaleDateString() : '--';
+                return (
+                  <TouchableOpacity
+                    key={customer.id}
+                    style={styles.recentCustomerCard}
+                    onPress={() => navigation.navigate("CustomerDetails", { id: customer.id })}
+                  >
+                    <View style={[styles.recentAvatar, { backgroundColor: avatarColor }]}>
+                      <Text style={styles.recentAvatarText}>{initials.toUpperCase()}</Text>
+                    </View>
+                    <Text style={styles.recentCustomerName} numberOfLines={1}>{customer.name}</Text>
+                    <Text style={styles.recentCustomerContact} numberOfLines={1}>{customer.contact}</Text>
+                    <View style={[styles.recentStatusBadge, { backgroundColor: badgeColor }]}> 
+                      <Text style={[styles.recentStatusText, { color: badgeText }]}>{customer.status}</Text>
+                    </View>
+                    <Text style={styles.recentBalance}>{balance}</Text>
+                    <Text style={styles.recentLastTx}>Last Tx: {lastTx}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
           )}
         </View>
       </ScrollView>
@@ -887,6 +899,66 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#fff',
+  },
+  recentCustomerCard: {
+    width: 160,
+    marginHorizontal: 8,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  recentAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  recentAvatarText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 20,
+  },
+  recentCustomerName: {
+    fontWeight: '600',
+    fontSize: 16,
+    color: '#1e293b',
+    marginBottom: 2,
+    textAlign: 'center',
+  },
+  recentCustomerContact: {
+    fontSize: 13,
+    color: '#64748b',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  recentStatusBadge: {
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginBottom: 4,
+  },
+  recentStatusText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  recentBalance: {
+    fontSize: 15,
+    color: '#2563EB',
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  recentLastTx: {
+    fontSize: 12,
+    color: '#6B7280',
+    textAlign: 'center',
   },
 });
 
