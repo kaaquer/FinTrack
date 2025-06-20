@@ -137,7 +137,7 @@ const AddEditCustomer = () => {
         await apiService.createCustomer(customerData);
         await showSuccessAlert('Success! 🎉', 'Customer has been added successfully!');
         triggerDashboardRefresh();
-        navigation.navigate('CustomersList');
+        navigation.replace('CustomersList');
       } else {
         if (!customer || !customer.customer_id) {
           await showErrorAlert('Error', 'Customer data is missing. Please go back and try again.');
@@ -146,7 +146,7 @@ const AddEditCustomer = () => {
         await apiService.updateCustomer(customer.customer_id, customerData);
         await showSuccessAlert('Success! ✅', 'Customer has been updated successfully!');
         triggerDashboardRefresh();
-        navigation.navigate('CustomersList');
+        navigation.replace('CustomersList');
       }
     } catch (err: any) {
       console.error('Error saving customer:', err);
