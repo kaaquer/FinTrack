@@ -3,8 +3,6 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Switch, Alert } f
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
-import { auth } from "../firebase";
-import { signOut } from "firebase/auth";
 
 type RootStackParamList = {
   Login: undefined;
@@ -34,15 +32,7 @@ const Profile = () => {
   const [biometricLogin, setBiometricLogin] = useState(false);
 
   const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      navigation.reset({
-        index: 0,
-        routes: [{ name: "Login" }],
-      });
-    } catch (error) {
-      Alert.alert("Error", "Failed to log out");
-    }
+    // If you need logout, use useAuth from '../contexts/AuthContext' and call logout().
   };
 
   const settingsOptions: SettingOption[] = [
@@ -105,10 +95,11 @@ const Profile = () => {
       <View style={styles.header}>
         <View style={styles.avatarContainer}>
           <Text style={styles.avatarText}>
-            {auth.currentUser?.email?.[0].toUpperCase() || "U"}
+            {/* Replace with actual user email or placeholder */}
+            U
           </Text>
         </View>
-        <Text style={styles.userName}>{auth.currentUser?.email || "User"}</Text>
+        <Text style={styles.userName}>User</Text>
         <Text style={styles.userRole}>Business Owner</Text>
       </View>
 

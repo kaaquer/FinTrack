@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { auth } from '../firebase'; // Import Firebase auth
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { useAuth } from '../contexts/AuthContext'; // Import AuthContext instead of Firebase
 
 // Define navigation types
 type RootStackParamList = {
@@ -17,6 +16,7 @@ type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'
 
 const LoginScreen = () => {
   const navigation = useNavigation<LoginScreenNavigationProp>();
+  const { login } = useAuth(); // Use AuthContext
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -29,12 +29,12 @@ const LoginScreen = () => {
 
     setIsLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      await login({ email, password });
       Alert.alert('Success', 'Login successful!');
       navigation.replace('MainTabs'); // Navigate to the main screen after login
     } catch (error: any) {
-      Alert.alert('Error', error.message);
-      console.error('Login Error:', error.message);
+      Alert.alert('Login Failed', error.response?.data?.error || 'Invalid email or password. Please try again.');
+      console.error('Login Error:', error.response?.data?.error || error.message);
     } finally {
       setIsLoading(false);
     }

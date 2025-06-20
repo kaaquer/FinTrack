@@ -1,15 +1,17 @@
-import React from "react";
+import React, { useRef } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItemList } from "@react-navigation/drawer";
 import { Ionicons } from "@expo/vector-icons";
-import { View, TouchableOpacity, Text, Alert, StyleSheet } from "react-native";
+import { View, TouchableOpacity, Text, StyleSheet } from "react-native";
 import { useNavigation, DrawerActions } from "@react-navigation/native";
 import type { NavigationProp, ParamListBase } from '@react-navigation/native';
 import type { StackNavigationProp } from "@react-navigation/stack";
-import { getAuth, signOut } from "firebase/auth";
+import { useAuth } from '../contexts/AuthContext';
+import { showConfirmAlert, showErrorAlert } from '../utils/alertUtils';
+import { DashboardRefreshProvider } from '../contexts/DashboardRefreshContext';
 
+import CustomerStack from "./CustomerStack";
 import Cashbook from "../Screens/Cashbook";
-import Customers from "../Screens/Customers";
 import Receipts from "../Screens/Receipts";
 import Suppliers from "../Screens/Suppliers";
 import Profile from "../Screens/Profile";
@@ -55,6 +57,14 @@ const HeaderLeft = () => {
   );
 };
 
+const HomeTabScreen = () => {
+  return (
+    <DashboardRefreshProvider>
+      <CustomerStack />
+    </DashboardRefreshProvider>
+  );
+};
+
 const TabNavigator = () => {
   return (
     <Tab.Navigator
@@ -90,7 +100,7 @@ const TabNavigator = () => {
     >
       <Tab.Screen 
         name="Home" 
-        component={Customers}
+        component={HomeTabScreen}
         options={{
           title: "Home"
         }}
@@ -127,26 +137,21 @@ type DrawerParamList = {
 
 const CustomDrawerContent = (props: any) => {
   const navigation = useNavigation<StackNavigationProp<DrawerParamList>>();
-  const auth = getAuth();  const handleLogout = async () => {
-    Alert.alert(
+  const { logout } = useAuth();
+
+  const handleLogout = async () => {
+    showConfirmAlert(
       "Logout",
       "Are you sure you want to logout?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Logout",
-          onPress: async () => {
-            try {
-              await signOut(auth);
-              // Using replace instead of reset to avoid any navigation stack issues
-              navigation.replace('Login');
-            } catch (error) {
-              Alert.alert("Error", "Failed to log out. Please try again.");
-            }
-          },
-        },
-      ],
-      { cancelable: false }
+      async () => {
+        try {
+          await logout();
+          // Using replace instead of reset to avoid any navigation stack issues
+          navigation.replace('Login');
+        } catch (error) {
+          showErrorAlert("Error", "Failed to log out. Please try again.");
+        }
+      }
     );
   };
 

@@ -30,7 +30,7 @@ const AddSupplierScreen: React.FC = () => {
           />
         )}
       />
-      {errors.companyName && <Text style={styles.error}>{errors.companyName.message}</Text>}
+      {errors.companyName && <Text style={styles.error}>{errors.companyName.message?.toString()}</Text>}
 
       <Controller
         control={control}
@@ -46,7 +46,7 @@ const AddSupplierScreen: React.FC = () => {
           />
         )}
       />
-      {errors.email && <Text style={styles.error}>{errors.email.message}</Text>}
+      {errors.email && <Text style={styles.error}>{errors.email.message?.toString()}</Text>}
 
       <Controller
         control={control}

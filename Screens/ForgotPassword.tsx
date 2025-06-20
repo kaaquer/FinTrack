@@ -2,8 +2,7 @@ import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
-import { auth } from "../firebase";
-import { sendPasswordResetEmail } from "firebase/auth";
+import { apiService } from "../services/api";
 
 type RootStackParamList = {
   Login: undefined;
@@ -15,6 +14,7 @@ type ForgotPasswordScreenNavigationProp = StackNavigationProp<RootStackParamList
 
 const ForgotPasswordScreen = () => {
   const [email, setEmail] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const navigation = useNavigation<ForgotPasswordScreenNavigationProp>();
 
   const handleResetPassword = async () => {
@@ -24,14 +24,18 @@ const ForgotPasswordScreen = () => {
     }
 
     try {
-      await sendPasswordResetEmail(auth, email);
+      setIsLoading(true);
+      // Note: You'll need to implement this endpoint in your backend
+      await apiService.requestPasswordReset(email);
       Alert.alert(
         "Success",
         "Password reset email sent. Please check your inbox.",
         [{ text: "OK", onPress: () => navigation.navigate("Login") }]
       );
     } catch (error: any) {
-      Alert.alert("Error", error.message);
+      Alert.alert("Error", error.response?.data?.message || "Failed to send reset email. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 

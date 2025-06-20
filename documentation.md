@@ -1,404 +1,248 @@
 # FinTrack - Financial Management Application
 
 ## Overview
-FinTrack is a comprehensive financial management application built with React Native and TypeScript. It helps businesses manage their finances, customers, suppliers, transactions, and documents all in one place.
-
-## Data Models and Relationships
-
-### User
-- id: string (primary key)
-- email: string (unique)
-- firstName: string
-- lastName: string
-- businessName: string
-- phoneNumber: string
-- createdAt: timestamp
-- updatedAt: timestamp
-- settings: {
-  notifications: boolean
-  darkMode: boolean
-  biometricLogin: boolean
-}
-
-### Customer
-- id: string (primary key)
-- userId: string (foreign key to User)
-- firstName: string
-- lastName: string
-- email: string
-- phone: string
-- company: string
-- status: enum ['Active', 'Lead']
-- address: {
-  street: string
-  city: string
-  state: string
-  zipCode: string
-  country: string
-}
-- createdAt: timestamp
-- updatedAt: timestamp
-- totalTransactions: number
-- lastTransactionDate: timestamp
-
-### Supplier
-- id: string (primary key)
-- userId: string (foreign key to User)
-- name: string
-- contactPerson: string
-- email: string
-- phone: string
-- address: {
-  street: string
-  city: string
-  state: string
-  zipCode: string
-  country: string
-}
-- taxId: string
-- paymentTerms: string
-- createdAt: timestamp
-- updatedAt: timestamp
-
-### Transaction
-- id: string (primary key)
-- userId: string (foreign key to User)
-- type: enum ['income', 'expense']
-- amount: number
-- description: string
-- category: string
-- date: timestamp
-- status: enum ['pending', 'completed', 'cancelled']
-- paymentMethod: string
-- reference: string
-- customerId: string (optional, foreign key to Customer)
-- supplierId: string (optional, foreign key to Supplier)
-- attachments: string[] (references to Receipt)
-- createdAt: timestamp
-- updatedAt: timestamp
-
-### Receipt
-- id: string (primary key)
-- userId: string (foreign key to User)
-- transactionId: string (foreign key to Transaction)
-- imageUrl: string
-- category: string
-- amount: number
-- date: timestamp
-- vendor: string
-- notes: string
-- tags: string[]
-- createdAt: timestamp
-- updatedAt: timestamp
-
-### Invoice
-- id: string (primary key)
-- userId: string (foreign key to User)
-- customerId: string (foreign key to Customer)
-- invoiceNumber: string
-- issueDate: timestamp
-- dueDate: timestamp
-- status: enum ['draft', 'sent', 'paid', 'overdue', 'cancelled']
-- items: [{
-  description: string
-  quantity: number
-  unitPrice: number
-  amount: number
-  tax: number
-}]
-- subtotal: number
-- tax: number
-- total: number
-- notes: string
-- terms: string
-- createdAt: timestamp
-- updatedAt: timestamp
-
-### Bill
-- id: string (primary key)
-- userId: string (foreign key to User)
-- supplierId: string (foreign key to Supplier)
-- billNumber: string
-- issueDate: timestamp
-- dueDate: timestamp
-- status: enum ['pending', 'paid', 'overdue', 'cancelled']
-- items: [{
-  description: string
-  quantity: number
-  unitPrice: number
-  amount: number
-  tax: number
-}]
-- subtotal: number
-- tax: number
-- total: number
-- notes: string
-- createdAt: timestamp
-- updatedAt: timestamp
-
-### Notification
-- id: string (primary key)
-- userId: string (foreign key to User)
-- type: enum ['payment', 'reminder', 'alert', 'system']
-- title: string
-- message: string
-- read: boolean
-- relatedId: string (polymorphic reference)
-- relatedType: string
-- timestamp: timestamp
-- action: string (optional)
-
-## Database Relationships
-
-### One-to-Many Relationships
-- User -> Customers
-- User -> Suppliers
-- User -> Transactions
-- User -> Receipts
-- User -> Invoices
-- User -> Bills
-- User -> Notifications
-- Customer -> Invoices
-- Customer -> Transactions
-- Supplier -> Bills
-- Supplier -> Transactions
-- Transaction -> Receipts
-
-### Many-to-Many Relationships
-- Transaction <-> Tags (through TransactionTags)
-- Receipt <-> Tags (through ReceiptTags)
+FinTrack is a comprehensive financial management application built with React Native/Expo for the frontend and Node.js/Express with SQLite for the backend. The application provides complete financial tracking, customer management, supplier management, invoicing, and reporting capabilities.
 
 ## Features
 
-### 1. Authentication
-- Secure login and signup functionality
-- Password reset capability
-- Biometric login support
-- Firebase authentication integration
+### Core Features
+- **User Authentication & Authorization**: Custom JWT-based authentication system with role-based access control
+- **Business Management**: Multi-tenant architecture supporting multiple businesses
+- **Customer Management**: Complete customer database with contact information and credit tracking
+- **Supplier Management**: Supplier database with payment terms and balance tracking
+- **Transaction Management**: Comprehensive transaction recording with multiple types and categories
+- **Invoice Management**: Full invoice lifecycle from creation to payment tracking
+- **Receipt Management**: Digital receipt storage and management
+- **Financial Reporting**: Profit & loss, cash flow, and dashboard reports
+- **Notifications**: Real-time notifications for important events
+- **Analytics**: Customer behavior and financial analytics
 
-### 2. Dashboard (Home)
-- Overview of business metrics
-- Quick access to key features
-- Recent customer activity
-- Financial summaries
+### Technical Features
+- **Cross-Platform**: React Native/Expo for iOS and Android
+- **Backend API**: Node.js/Express RESTful API
+- **Database**: SQLite with comprehensive schema
+- **Authentication**: JWT-based authentication with password reset functionality
+- **Security**: Password hashing, input validation, rate limiting
+- **Real-time**: WebSocket support for notifications
+- **File Upload**: Receipt image storage
+- **Pagination**: Efficient data loading with pagination
+- **Search & Filtering**: Advanced search and filtering capabilities
 
-### 3. Customer Management
-- Add and manage customers
-- View customer details and history
-- Track customer payments
-- Customer status tracking (Active/Lead)
-- Search functionality
+## Architecture
 
-### 4. Supplier Management
-- Add and manage suppliers
-- Supplier contact information
-- Purchase history
-- Search and filter capabilities
+### Frontend (React Native/Expo)
+- **Navigation**: React Navigation with drawer and tab navigation
+- **State Management**: React Context for authentication and global state
+- **API Integration**: Axios-based API service with interceptors
+- **UI Components**: Custom components with consistent styling
+- **Form Handling**: React Hook Form for form validation
+- **Storage**: AsyncStorage for local data persistence
 
-### 5. Cashbook
-- Track income and expenses
-- Real-time balance updates
-- Transaction categorization
-- Monthly overview with charts
-- Expense breakdown visualization
+### Backend (Node.js/Express)
+- **Framework**: Express.js with middleware for security and validation
+- **Database**: SQLite with comprehensive schema
+- **Authentication**: JWT-based authentication with bcrypt password hashing
+- **Validation**: Express-validator for input validation
+- **Security**: Helmet, CORS, rate limiting
+- **File Handling**: Multer for file uploads
+- **Error Handling**: Comprehensive error handling and logging
 
-### 6. Receipts Management
-- Digital receipt storage
-- Scan physical receipts
-- Upload receipt images
-- Categorize and organize receipts
-- Quick search and retrieval
+### Database Schema
+The application uses a comprehensive SQLite database with the following main tables:
+- **businesses**: Multi-tenant business information
+- **users**: User accounts with role-based access
+- **customers**: Customer database with contact and financial information
+- **suppliers**: Supplier database with payment terms
+- **transactions**: Financial transactions with detailed categorization
+- **invoices**: Invoice management with status tracking
+- **receipts**: Receipt storage with image support
+- **categories**: Transaction categorization
+- **notifications**: User notifications
+- **analytics**: Financial and customer analytics
 
-### 7. Financial Reports & Insights
-- Generate financial reports
-- Business analytics
-- Income vs. Expense analysis
-- Period-based reporting (Monthly/Quarterly/Yearly)
-- Export capabilities
-
-### 8. Transactions History
-- Complete transaction log
-- Filter by type (Income/Expense)
-- Search transactions
-- Transaction status tracking
-- Date-based filtering
-
-### 9. Invoices & Bills
-- Create and manage invoices
-- Track pending payments
-- Bill management
-- Payment status monitoring
-
-### 10. Profile Management
-- User profile settings
-- Notification preferences
-- Dark mode toggle
-- Security settings
-- Account management
-
-### 11. Notifications
-- Real-time notifications
-- Payment reminders
-- Due date alerts
-- System notifications
-- Mark as read functionality
-
-## Technical Architecture
-
-### Frontend
-- React Native
-- TypeScript
-- Expo framework
-- React Navigation (Stack, Drawer, and Tab navigation)
-
-### Backend Integration
-- Firebase Authentication
-- Real-time data synchronization
-
-### UI Components
-- Custom components
-- Ionicons integration
-- Responsive design
-- Cross-platform compatibility
-
-## Navigation Structure
-
-### Bottom Tab Navigation
-- Home (Dashboard)
-- Suppliers
-- Cashbook
-- Receipts
-
-### Drawer Navigation
-- Home
-- Profile
-- Notifications
-- Reports & Insights
-- Transactions History
-- Invoices & Bills
-- Help & Support
-
-## Security Features
-- Secure authentication
-- Session management
-- Data encryption
-- Secure logout functionality
-- Error handling
-
-## User Preferences
-- Theme customization
-- Notification settings
-- Profile customization
-- Display preferences
-
-## Support and Help
-- In-app support section
-- FAQs
-- Contact methods:
-  - Email support
-  - Live chat
-  - Phone support
-- Documentation access
-
-## Getting Started
+## Installation & Setup
 
 ### Prerequisites
-- Node.js
+- Node.js (v16 or higher)
 - npm or yarn
 - Expo CLI
-- React Native development environment
+- SQLite3
 
-### Installation
-1. Clone the repository
-2. Install dependencies: `npm install`
-3. Configure Firebase credentials
-4. Start the development server: `npm start`
+### Backend Setup
+1. Navigate to the backend directory:
+   ```bash
+   cd backend
+   ```
 
-### Development Commands
-- `npm start`: Start the development server
-- `npm test`: Run tests
-- `npm run build`: Build for production
-- `npm run eject`: Eject from Expo
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-## Best Practices
-- Regular data backups
-- Secure password management
-- Regular app updates
-- Data privacy compliance
-- Regular security audits
+3. Create environment file:
+   ```bash
+   cp .env.example .env
+   ```
 
-## Database Design Considerations
+4. Configure environment variables in `.env`:
+   ```
+   PORT=3001
+   JWT_SECRET=your-secret-key-here
+   JWT_EXPIRES_IN=7d
+   ```
 
-### Indexing Strategy
-- Primary indices on all ID fields
-- Secondary indices on:
-  - User email
-  - Customer email and phone
-  - Supplier email and phone
-  - Transaction dates
-  - Invoice/Bill numbers and dates
-  - Receipt dates and categories
-  - Notification timestamps
+5. Initialize the database:
+   ```bash
+   npm run init-db
+   ```
 
-### Data Validation Rules
-1. Users
-   - Email must be unique and valid format
-   - Phone numbers must be in E.164 format
-   - Password must meet security requirements
+6. Run database migrations (if needed):
+   ```bash
+   npm run migrate
+   ```
 
-2. Transactions
-   - Amount must be positive number
-   - Date cannot be in future
-   - Status transitions must follow defined flow
+7. Start the backend server:
+   ```bash
+   npm run dev
+   ```
 
-3. Invoices/Bills
-   - Numbers must be unique per user
-   - Due date must be after issue date
-   - Total must match sum of items
-   - Status transitions must follow defined flow
+### Frontend Setup
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-### Security Rules
-1. User Level Access
-   - Users can only access their own data
-   - Admin roles for business owners
-   - Read-only roles for accountants
+2. Start the Expo development server:
+   ```bash
+   npm start
+   ```
 
-2. Data Privacy
-   - Encryption for sensitive data
-   - Masked data in logs
-   - GDPR compliance measures
+3. Run on device or simulator:
+   ```bash
+   npm run android
+   # or
+   npm run ios
+   ```
 
-### Performance Considerations
-1. Pagination
-   - Implement cursor-based pagination for:
-     - Transactions list
-     - Customer/Supplier lists
-     - Invoices/Bills lists
-     - Notifications
+## API Endpoints
 
-2. Caching Strategy
-   - Cache frequently accessed data:
-     - User profile
-     - Recent transactions
-     - Active invoices
-     - Unread notifications
+### Authentication
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/login` - User login
+- `POST /api/auth/logout` - User logout
+- `GET /api/auth/profile` - Get user profile
+- `PUT /api/auth/profile` - Update user profile
+- `POST /api/auth/forgot-password` - Request password reset
+- `POST /api/auth/reset-password` - Reset password with token
 
-3. Data Archiving
-   - Archive old transactions
-   - Store historical data separately
-   - Implement data retention policies
+### Customers
+- `GET /api/customers` - Get customers with pagination and filtering
+- `POST /api/customers` - Create new customer
+- `GET /api/customers/:id` - Get customer by ID
+- `PUT /api/customers/:id` - Update customer
+- `DELETE /api/customers/:id` - Delete customer
 
-## Troubleshooting
-- Common issues and solutions
-- Error message explanations
-- Contact support for assistance
-- Debug mode instructions
+### Suppliers
+- `GET /api/suppliers` - Get suppliers with pagination and filtering
+- `POST /api/suppliers` - Create new supplier
+- `GET /api/suppliers/:id` - Get supplier by ID
+- `PUT /api/suppliers/:id` - Update supplier
+- `DELETE /api/suppliers/:id` - Delete supplier
 
----
+### Transactions
+- `GET /api/transactions` - Get transactions with pagination and filtering
+- `POST /api/transactions` - Create new transaction
+- `GET /api/transactions/:id` - Get transaction by ID
+- `PUT /api/transactions/:id` - Update transaction
+- `DELETE /api/transactions/:id` - Delete transaction
 
-## Version Information
-- Current Version: 1.0.0
-- Last Updated: May 2025
-- Platform Support: iOS and Android
+### Invoices
+- `GET /api/invoices` - Get invoices with pagination and filtering
+- `POST /api/invoices` - Create new invoice
+- `GET /api/invoices/:id` - Get invoice by ID
+- `PUT /api/invoices/:id/status` - Update invoice status
+- `DELETE /api/invoices/:id` - Delete invoice
 
-For additional support or inquiries, please contact the support team through the Help & Support section in the app.
+### Receipts
+- `GET /api/receipts` - Get receipts with pagination and filtering
+- `POST /api/receipts` - Create new receipt
+- `GET /api/receipts/:id` - Get receipt by ID
+- `PUT /api/receipts/:id` - Update receipt
+- `DELETE /api/receipts/:id` - Delete receipt
+
+### Reports
+- `GET /api/reports/profit-loss` - Profit & loss report
+- `GET /api/reports/cash-flow` - Cash flow report
+- `GET /api/reports/dashboard` - Dashboard summary
+
+## Security Features
+
+### Authentication & Authorization
+- JWT-based authentication with configurable expiration
+- Password hashing using bcrypt
+- Role-based access control (admin, user, accountant)
+- Password reset functionality with secure tokens
+- Session management with automatic token refresh
+
+### Input Validation & Sanitization
+- Express-validator for request validation
+- SQL injection prevention through parameterized queries
+- XSS protection through input sanitization
+- File upload validation and size limits
+
+### Security Headers & Middleware
+- Helmet.js for security headers
+- CORS configuration
+- Rate limiting to prevent abuse
+- Request size limits
+- Error handling without sensitive information exposure
+
+## Development Guidelines
+
+### Code Style
+- Use TypeScript for type safety
+- Follow ESLint configuration
+- Use meaningful variable and function names
+- Add comments for complex logic
+- Implement proper error handling
+
+### Testing
+- Unit tests for API endpoints
+- Integration tests for database operations
+- Frontend component testing
+- API endpoint testing with supertest
+
+### Database
+- Use migrations for schema changes
+- Implement proper indexing for performance
+- Use transactions for data integrity
+- Regular database backups
+
+## Deployment
+
+### Backend Deployment
+1. Set up production environment variables
+2. Configure database for production
+3. Set up SSL/TLS certificates
+4. Configure reverse proxy (nginx)
+5. Set up process manager (PM2)
+6. Configure logging and monitoring
+
+### Frontend Deployment
+1. Build production bundle
+2. Configure app store deployment
+3. Set up CI/CD pipeline
+4. Configure analytics and crash reporting
+
+## Contributing
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests for new functionality
+5. Submit a pull request
+
+## License
+This project is licensed under the MIT License.
+
+## Support
+For support and questions, please contact the development team or create an issue in the repository.

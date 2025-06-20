@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { auth } from '../firebase'; // Import Firebase auth from firebaseConfig.ts
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import api from '../services/api'; // Import your API service
 
 // Define navigation types
 type RootStackParamList = {
@@ -22,7 +21,7 @@ const SignUpScreen = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  // Function to handle Firebase signup
+  // Function to handle backend signup
   const handleSignUp = async () => {
     if (!email || !password || !confirmPassword) {
       Alert.alert('Error', 'Please fill in all fields.');
@@ -35,13 +34,20 @@ const SignUpScreen = () => {
     }
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      console.log('User registered:', userCredential.user.email);
+      // Call your backend API to register the user
+      const response = await api.register({ 
+        email, 
+        password,
+        firstName: 'User', // You might want to add input fields for these
+        lastName: 'Name',
+        businessName: 'My Business'
+      });
+      console.log('User registered:', response.user.email);
       Alert.alert('Success', 'Account created successfully!');
       navigation.navigate('Login'); // Navigate to Login screen
     } catch (error: any) {
-      Alert.alert('Error', error.message);
-      console.error('Signup Error:', error.message);
+      Alert.alert('Signup Error', error.response?.data?.error || 'An unexpected error occurred during signup.');
+      console.error('Signup Error:', error.response?.data?.error || error.message);
     }
   };
 
