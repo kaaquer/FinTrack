@@ -14,6 +14,7 @@ const invoiceRoutes = require('./routes/invoices');
 const reportRoutes = require('./routes/reports');
 const notificationRoutes = require('./routes/notifications');
 const userRoutes = require('./routes/users');
+const accountsRouter = require('./routes/accounts');
 
 const { initializeDatabase } = require('./database/init');
 const { authenticateToken } = require('./middleware/auth');
@@ -64,6 +65,7 @@ app.use('/api/invoices', authenticateToken, invoiceRoutes);
 app.use('/api/reports', authenticateToken, reportRoutes);
 app.use('/api/notifications', authenticateToken, notificationRoutes);
 app.use('/api/users', authenticateToken, userRoutes);
+app.use('/api/accounts', accountsRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -85,7 +87,7 @@ async function startServer() {
     await initializeDatabase();
     console.log('✅ Database initialized successfully');
     
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 FinTrack Backend Server running on port ${PORT}`);
       console.log(`📊 Health check: http://localhost:${PORT}/health`);
       console.log(`🔗 API Base URL: http://localhost:${PORT}/api`);

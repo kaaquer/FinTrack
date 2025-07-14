@@ -1,17 +1,69 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation, NavigationProp } from "@react-navigation/native";
+import { useNavigation, NavigationProp, useFocusEffect } from "@react-navigation/native";
+import { apiService, Supplier } from "../services/api";
+import { showConfirmAlert, showSuccessAlert, showErrorAlert } from '../utils/alertUtils';
 
 type RootStackParamList = {
   AddSupplier: undefined;
+  EditSupplier: { supplier: Supplier };
+  SupplierDetails: { id: number };
 };
-
 
 const Suppliers = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [search, setSearch] = useState("");
-  const [suppliers, setSuppliers] = useState<{ id: string; name: string }[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+
+  const fetchSuppliers = async () => {
+    setLoading(true);
+    try {
+      const response = await apiService.getSuppliers({ search });
+      setSuppliers(response.data);
+    } catch (err) {
+      setSuppliers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Refresh suppliers list every time the screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      fetchSuppliers();
+    }, [search])
+  );
+
+  const handleEditSupplier = (supplier: Supplier) => {
+    navigation.navigate("EditSupplier", { supplier });
+  };
+
+  const handleDeleteSupplier = (supplier: Supplier) => {
+    showConfirmAlert(
+      'Delete Supplier',
+      `Are you sure you want to delete "${supplier.supplier_name}"? This action cannot be undone!`,
+      async () => {
+        setDeletingId(supplier.supplier_id);
+        try {
+          await apiService.deleteSupplier(supplier.supplier_id);
+          await showSuccessAlert('Success', 'Supplier deleted successfully');
+          fetchSuppliers();
+        } catch (err: any) {
+          const msg = err?.response?.data?.error || 'Failed to delete supplier.';
+          await showErrorAlert('Error', msg);
+        } finally {
+          setDeletingId(null);
+        }
+      }
+    );
+  };
+
+  const handleViewSupplier = (supplier: Supplier) => {
+    navigation.navigate('SupplierDetails', { id: supplier.supplier_id });
+  };
 
   return (
     <View style={styles.container}>
@@ -27,6 +79,7 @@ const Suppliers = () => {
           placeholder="Search suppliers..."
           value={search}
           onChangeText={setSearch}
+          onSubmitEditing={fetchSuppliers}
         />
       </View>
 
@@ -37,7 +90,9 @@ const Suppliers = () => {
       </TouchableOpacity>
 
       {/* Empty State */}
-      {suppliers.length === 0 ? (
+      {loading ? (
+        <Text>Loading...</Text>
+      ) : suppliers.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Ionicons name="document-text-outline" size={50} color="#A1A1AA" />
           <Text style={styles.emptyTitle}>No suppliers found</Text>
@@ -50,11 +105,19 @@ const Suppliers = () => {
       ) : (
         <FlatList
           data={suppliers}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item.supplier_id.toString()}
           renderItem={({ item }) => (
-            <View style={styles.supplierItem}>
-              <Text style={styles.supplierName}>{item.name}</Text>
-            </View>
+            <TouchableOpacity style={styles.supplierItem} onPress={() => handleViewSupplier(item)} activeOpacity={0.8}>
+              <Text style={styles.supplierName}>{item.supplier_name}</Text>
+              <View style={styles.actionButtons}>
+                <TouchableOpacity onPress={(e) => { e.stopPropagation(); handleEditSupplier(item); }} style={styles.editButton}>
+                  <Ionicons name="create-outline" size={20} color="#2563EB" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={(e) => { e.stopPropagation(); handleDeleteSupplier(item); }} style={styles.deleteButton} disabled={deletingId === item.supplier_id}>
+                  <Ionicons name="trash-outline" size={20} color="#DC2626" />
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
           )}
         />
       )}
@@ -156,11 +219,24 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
+    justifyContent: 'space-between',
   },
   supplierName: {
     fontSize: 16,
     color: "#111827",
     fontWeight: "500",
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  editButton: {
+    marginLeft: 12,
+    padding: 4,
+  },
+  deleteButton: {
+    marginLeft: 8,
+    padding: 4,
   },
   fab: {
     position: "absolute",

@@ -20,6 +20,7 @@ import Transactions from "@/Screens/Transactions";
 import Notifications from "@/Screens/Notifications";
 import Reports from "../Screens/Report";
 import Support from "@/Screens/Support";
+import AddEditTransaction from '../Screens/AddEditTransaction';
 
 const Tab = createBottomTabNavigator();
 const Drawer = createDrawerNavigator();
@@ -124,6 +125,16 @@ const TabNavigator = () => {
         component={Receipts}
         options={{
           title: "Receipts"
+        }}
+      />
+      <Tab.Screen 
+        name="Transactions" 
+        component={Transactions}
+        options={{
+          title: "Transactions",
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons name={focused ? "swap-horizontal" : "swap-horizontal-outline"} size={size} color={color} />
+          )
         }}
       />
     </Tab.Navigator>

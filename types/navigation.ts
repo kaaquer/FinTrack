@@ -1,4 +1,4 @@
-import { Customer } from '../services/api';
+import { Customer, Supplier } from '../services/api';
 
 // Root Stack Navigation Types
 export type RootStackParamList = {
@@ -8,6 +8,8 @@ export type RootStackParamList = {
   MainTabs: undefined;
   AddCustomer: undefined;
   AddSupplier: undefined;
+  EditSupplier: { supplier: Supplier };
+  SupplierDetails: { id: number };
   CustomersList: undefined;
   CustomerDetails: { id: string };
   EditCustomer: { customer: Customer };

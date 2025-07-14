@@ -1,98 +1,72 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
-interface Transaction {
-  id: string;
-  type: 'income' | 'expense';
-  amount: number;
-  description: string;
-  date: string;
-  category: string;
-  status: 'completed' | 'pending';
-}
-
-// Mock data for transactions
-const mockTransactions: Transaction[] = [
-  {
-    id: '1',
-    type: 'income',
-    amount: 1500,
-    description: 'Client Payment - Project A',
-    date: '2024-03-20',
-    category: 'Services',
-    status: 'completed'
-  },
-  {
-    id: '2',
-    type: 'expense',
-    amount: 500,
-    description: 'Office Supplies',
-    date: '2024-03-19',
-    category: 'Supplies',
-    status: 'completed'
-  },
-  {
-    id: '3',
-    type: 'income',
-    amount: 2000,
-    description: 'Consulting Services',
-    date: '2024-03-18',
-    category: 'Services',
-    status: 'pending'
-  },
-  // Add more mock transactions as needed
-];
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { apiService, Transaction } from '../services/api';
 
 const TransactionsScreen = () => {
+  const navigation = useNavigation();
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<'all' | 'income' | 'expense'>('all');
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const filteredTransactions = mockTransactions
-    .filter(transaction => {
-      if (filter === 'all') return true;
-      return transaction.type === filter;
-    })
-    .filter(transaction =>
-      transaction.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      transaction.category.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+  const fetchTransactions = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params: any = {};
+      if (filter !== 'all') params.transactionType = filter;
+      if (searchQuery) params.search = searchQuery;
+      const response = await apiService.getTransactions(params);
+      setTransactions(response.data);
+    } catch (err: any) {
+      setError(err?.response?.data?.error || err.message || 'Failed to load transactions');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchTransactions();
+    }, [filter, searchQuery])
+  );
 
   const renderTransaction = ({ item }: { item: Transaction }) => (
-    <TouchableOpacity style={styles.transactionCard}>
+    <TouchableOpacity style={styles.transactionCard} onPress={() => {/* TODO: navigate to details */}}>
       <View style={styles.transactionHeader}>
         <View style={styles.typeContainer}>
           <Ionicons
-            name={item.type === 'income' ? 'arrow-down-circle' : 'arrow-up-circle'}
+            name={item.transaction_type === 'income' ? 'arrow-down-circle' : 'arrow-up-circle'}
             size={24}
-            color={item.type === 'income' ? '#4CAF50' : '#F44336'}
+            color={item.transaction_type === 'income' ? '#4CAF50' : '#F44336'}
           />
           <Text style={[
             styles.type,
-            { color: item.type === 'income' ? '#4CAF50' : '#F44336' }
+            { color: item.transaction_type === 'income' ? '#4CAF50' : '#F44336' }
           ]}>
-            {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
+            {item.transaction_type.charAt(0).toUpperCase() + item.transaction_type.slice(1)}
           </Text>
         </View>
         <Text style={styles.amount}>
-          {item.type === 'income' ? '+' : '-'}${item.amount}
+          {item.transaction_type === 'income' ? '+' : '-'}${item.total_amount}
         </Text>
       </View>
-      
       <Text style={styles.description}>{item.description}</Text>
-      
       <View style={styles.transactionFooter}>
         <View style={styles.categoryContainer}>
-          <Text style={styles.category}>{item.category}</Text>
+          <Text style={styles.category}>{item.category_name || '-'}</Text>
         </View>
-        <Text style={styles.date}>{item.date}</Text>
+        <Text style={styles.date}>{item.transaction_date}</Text>
         <View style={[
           styles.statusBadge,
-          { backgroundColor: item.status === 'completed' ? '#E8F5E9' : '#FFF3E0' }
+          { backgroundColor: item.status === 'posted' ? '#E8F5E9' : '#FFF3E0' }
         ]}>
           <Text style={[
             styles.statusText,
-            { color: item.status === 'completed' ? '#4CAF50' : '#FF9800' }
+            { color: item.status === 'posted' ? '#4CAF50' : '#FF9800' }
           ]}>
             {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
           </Text>
@@ -104,7 +78,6 @@ const TransactionsScreen = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Transaction History</Text>
-      
       {/* Search Bar */}
       <View style={styles.searchContainer}>
         <Ionicons name="search" size={20} color="#666" />
@@ -115,7 +88,6 @@ const TransactionsScreen = () => {
           onChangeText={setSearchQuery}
         />
       </View>
-
       {/* Filter Buttons */}
       <View style={styles.filterContainer}>
         <TouchableOpacity
@@ -143,14 +115,27 @@ const TransactionsScreen = () => {
           </Text>
         </TouchableOpacity>
       </View>
-
-      <FlatList
-        data={filteredTransactions}
-        renderItem={renderTransaction}
-        keyExtractor={item => item.id}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.transactionsList}
-      />
+      {loading ? (
+        <Text>Loading...</Text>
+      ) : error ? (
+        <Text style={{ color: 'red' }}>{error}</Text>
+      ) : (
+        <FlatList
+          data={transactions}
+          renderItem={renderTransaction}
+          keyExtractor={item => String(item.transaction_id)}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.transactionsList}
+        />
+      )}
+      {/* Floating Action Button for Add Transaction */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => navigation.navigate('AddTransaction')}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="add" size={32} color="#fff" />
+      </TouchableOpacity>
     </View>
   );
 };
@@ -272,6 +257,23 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 12,
     fontWeight: '500',
+  },
+  fab: {
+    position: 'absolute',
+    right: 24,
+    bottom: 32,
+    backgroundColor: '#4F46E5',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+    zIndex: 100,
   },
 });
 

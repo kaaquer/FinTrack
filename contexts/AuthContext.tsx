@@ -1,18 +1,23 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { apiService, User as ApiUser } from '../services/api';
 
 interface User {
-  id: string;
+  id: number;
   email: string;
-  name: string;
+  firstName: string;
+  lastName: string;
+  role: 'admin' | 'user' | 'accountant';
+  businessId: number;
+  businessName: string;
 }
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (credentials: { email: string; password: string }) => Promise<void>;
   logout: () => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<boolean>;
+  register: (userData: { email: string; password: string; firstName: string; lastName: string; businessName: string }) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -43,26 +48,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (credentials: { email: string; password: string }): Promise<void> => {
     try {
       setLoading(true);
+      console.log('Attempting login with:', credentials.email);
       
-      // Mock authentication - replace with actual API call
-      // For now, we'll simulate a successful login
-      const mockUser: User = {
-        id: '1',
-        email: email,
-        name: email.split('@')[0], // Use email prefix as name
-      };
-
-      // Store user data
-      await AsyncStorage.setItem('user', JSON.stringify(mockUser));
-      setUser(mockUser);
+      const response = await apiService.login(credentials);
+      console.log('Login response received:', response);
       
-      return true;
+      // Store user data and token
+      await AsyncStorage.setItem('user', JSON.stringify(response.user));
+      await AsyncStorage.setItem('authToken', response.token);
+      
+      setUser(response.user);
+      console.log('Login successful for user:', response.user.email);
     } catch (error) {
       console.error('Login error:', error);
-      return false;
+      throw error; // Re-throw to let LoginScreen handle the error
     } finally {
       setLoading(false);
     }
@@ -71,34 +73,44 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = async (): Promise<void> => {
     try {
       setLoading(true);
-      await AsyncStorage.removeItem('user');
+      console.log('Logging out user:', user?.email);
+      
+      // Call API logout if user is logged in
+      if (user) {
+        await apiService.logout();
+      }
+      
+      // Clear stored data
+      await AsyncStorage.multiRemove(['user', 'authToken']);
       setUser(null);
+      console.log('Logout successful');
     } catch (error) {
       console.error('Logout error:', error);
+      // Even if API logout fails, clear local data
+      await AsyncStorage.multiRemove(['user', 'authToken']);
+      setUser(null);
     } finally {
       setLoading(false);
     }
   };
 
-  const register = async (email: string, password: string, name: string): Promise<boolean> => {
+  const register = async (userData: { email: string; password: string; firstName: string; lastName: string; businessName: string }): Promise<void> => {
     try {
       setLoading(true);
+      console.log('Attempting registration for:', userData.email);
       
-      // Mock registration - replace with actual API call
-      const mockUser: User = {
-        id: Date.now().toString(),
-        email: email,
-        name: name,
-      };
-
-      // Store user data
-      await AsyncStorage.setItem('user', JSON.stringify(mockUser));
-      setUser(mockUser);
+      const response = await apiService.register(userData);
+      console.log('Registration response received:', response);
       
-      return true;
+      // Store user data and token
+      await AsyncStorage.setItem('user', JSON.stringify(response.user));
+      await AsyncStorage.setItem('authToken', response.token);
+      
+      setUser(response.user);
+      console.log('Registration successful for user:', response.user.email);
     } catch (error) {
       console.error('Registration error:', error);
-      return false;
+      throw error; // Re-throw to let SignUp screen handle the error
     } finally {
       setLoading(false);
     }

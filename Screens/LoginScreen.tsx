@@ -26,15 +26,14 @@ const LoginScreen = () => {
       Alert.alert('Error', 'Please enter your email and password.');
       return;
     }
-
     setIsLoading(true);
     try {
       await login({ email, password });
       Alert.alert('Success', 'Login successful!');
       navigation.replace('MainTabs'); // Navigate to the main screen after login
     } catch (error: any) {
-      Alert.alert('Login Failed', error.response?.data?.error || 'Invalid email or password. Please try again.');
-      console.error('Login Error:', error.response?.data?.error || error.message);
+      const errorMessage = error.response?.data?.error || error.message || 'Unknown error occurred';
+      Alert.alert('Login Failed', errorMessage);
     } finally {
       setIsLoading(false);
     }

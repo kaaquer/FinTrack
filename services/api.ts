@@ -2,7 +2,7 @@ import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // API Configuration
-const API_BASE_URL = 'http://localhost:3000/api'; // Update this to match your backend port
+const API_BASE_URL = 'http://100.112.30.166:3000/api'; // Update this to match your backend port
 
 // Types
 export interface ApiResponse<T = any> {
@@ -157,6 +157,17 @@ export interface CustomerDetailsResponse {
   customer: Customer;
   recentTransactions: Transaction[];
   recentInvoices: Invoice[];
+}
+
+export interface Account {
+  account_id: number;
+  account_code: string;
+  account_name: string;
+  account_type: string;
+  account_subtype?: string;
+  current_balance: number;
+  is_active: boolean;
+  created_at: string;
 }
 
 // API Service Class
@@ -343,12 +354,44 @@ class ApiService {
   }
 
   async createSupplier(supplierData: Partial<Supplier>): Promise<Supplier> {
-    const response = await this.api.post<Supplier>('/suppliers', supplierData);
+    // Map frontend fields to backend expected fields
+    const backendData = {
+      supplierName: supplierData.supplier_name,
+      contactPerson: supplierData.contact_person,
+      email: supplierData.email,
+      phone: supplierData.phone,
+      address: supplierData.address,
+      city: supplierData.city,
+      state: supplierData.state,
+      country: supplierData.country,
+      postalCode: supplierData.postal_code,
+      taxId: supplierData.tax_id,
+      paymentTerms: supplierData.payment_terms,
+      isActive: supplierData.is_active,
+      notes: supplierData.notes
+    };
+    const response = await this.api.post<Supplier>('/suppliers', backendData);
     return response.data;
   }
 
   async updateSupplier(id: number, supplierData: Partial<Supplier>): Promise<Supplier> {
-    const response = await this.api.put<Supplier>(`/suppliers/${id}`, supplierData);
+    // Map frontend fields to backend expected fields
+    const backendData = {
+      supplierName: supplierData.supplier_name,
+      contactPerson: supplierData.contact_person,
+      email: supplierData.email,
+      phone: supplierData.phone,
+      address: supplierData.address,
+      city: supplierData.city,
+      state: supplierData.state,
+      country: supplierData.country,
+      postalCode: supplierData.postal_code,
+      taxId: supplierData.tax_id,
+      paymentTerms: supplierData.payment_terms,
+      isActive: supplierData.is_active,
+      notes: supplierData.notes
+    };
+    const response = await this.api.put<Supplier>(`/suppliers/${id}`, backendData);
     return response.data;
   }
 
@@ -491,6 +534,11 @@ class ApiService {
   async healthCheck(): Promise<any> {
     const response = await this.api.get('/health');
     return response.data;
+  }
+
+  async getAccounts(): Promise<Account[]> {
+    const response = await this.api.get<{ accounts: Account[] }>("/accounts");
+    return response.data.accounts;
   }
 }
 
